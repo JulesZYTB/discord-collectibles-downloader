@@ -8,8 +8,10 @@ DEFAULT_CONFIG = {
     "threads": 16,
     "retries": 3,
     "proxy": "",
-    "export_json": ""
+    "export_json": "",
+    "locale": "en-US",
 }
+
 
 def load_config():
     """Load configuration from config.yaml if present."""
@@ -37,6 +39,7 @@ def load_config():
         pass
     return config
 
+
 def save_config(config):
     """Save configuration into config.yaml file."""
     yaml_content = f"""# Discord Collectibles Scraper Configuration by MrX
@@ -46,6 +49,7 @@ threads: {config.get('threads', 16)}
 retries: {config.get('retries', 3)}
 proxy: "{config.get('proxy', '')}"
 export_json: "{config.get('export_json', '')}"
+locale: "{config.get('locale', 'en-US')}"
 """
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:

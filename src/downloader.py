@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from .banner import C_PURPLE, C_CYAN, C_GREEN, C_YELLOW, C_RED, C_BOLD, C_RESET
 from .utils import detect_file_extension
 
+
 def format_elapsed_time(seconds):
     """Format seconds into HH:MM:SS or MM:SS."""
     seconds = int(seconds)
@@ -14,11 +15,14 @@ def format_elapsed_time(seconds):
         return f"{h:02d}:{m:02d}:{s:02d}"
     return f"{m:02d}:{s:02d}"
 
+
 class AssetDownloader:
     def __init__(self, output_dir="discord_collectibles", scanner=None, max_workers=16):
         self.output_dir = os.path.abspath(output_dir)
         self.scanner = scanner
-        self.max_workers = max_workers
+        # Cap CDN concurrency when routing through a proxy to avoid proxy saturation/timeouts
+        has_proxy = bool(scanner and getattr(scanner, "proxies", None))
+        self.max_workers = min(max_workers, 16 if has_proxy else 24)
 
     def process_item_download(self, item):
         url = item["url"]
@@ -28,8 +32,7 @@ class AssetDownloader:
         name = item["name"]
         item_id = item["item_id"]
 
-        # Fast timeout (5s) for asset downloads so single dead proxy connections never freeze the queue
-        data, content_type = self.scanner.download_url(url, timeout=5)
+        data, content_type = self.scanner.download_url(url, timeout=12)
         if not data or len(data) < 50:
             return False, url, "Empty / 404 response"
 
@@ -52,7 +55,10 @@ class AssetDownloader:
 
     def download_all(self, items):
         if not items:
-            print(f"{C_RED}[!] No items to download.{C_RESET}")
+            if self.scanner and getattr(self.scanner, "token_revoked", False):
+                print(f"{C_RED}{C_BOLD}[✖] Telechargement annule : le token Discord est invalide ou revoque ({self.scanner.token_error_reason}).{C_RESET}")
+            else:
+                print(f"{C_RED}[!] No items to download.{C_RESET}")
             return
 
         print(f"{C_PURPLE}[*] DOWNLOADING {len(items)} ITEMS TO {self.output_dir}...{C_RESET}\n")
@@ -65,7 +71,7 @@ class AssetDownloader:
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_item = {executor.submit(self.process_item_download, item): item for item in items}
-            
+
             for idx, future in enumerate(as_completed(future_to_item), 1):
                 try:
                     success, path_or_url, status = future.result()
@@ -85,7 +91,7 @@ class AssetDownloader:
                 bar_len = 20
                 filled = int(bar_len * idx // total)
                 bar = '█' * filled + '░' * (bar_len - filled)
-                
+
                 sys.stdout.write(
                     f"\r\033[K {C_CYAN}[{bar}] {percent:5.1f}%{C_RESET} | "
                     f"{C_GREEN}Saved: {saved_count}{C_RESET} | "
