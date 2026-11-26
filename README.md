@@ -38,10 +38,10 @@ An ultra-modern, high-performance, modular CLI scraper for Discord profile colle
 > 🌐 **PROXY RECOMMENDATION / RECOMMANDATION PROXY**  
 > 
 > **[FR] UTILISATION DE PROXY FORTEMENT RECOMMANDÉE :**  
-> Pour scraper l'intégralité du catalogue Discord (plus de 1 200 éléments) sans subir de ralentissements ou de blocages temporaires **HTTP 429 (Rate-Limited)**, il est **fortement recommandé de configurer un proxy** (ou une liste de proxys rotatifs) via le menu de configuration avancée (`⚙️ Configure Advanced Settings`) ou dans le fichier `config.yaml`.
+> Pour scraper l'intégralité du catalogue Discord (plus de 3 000 assets) sans subir de ralentissements ou de blocages temporaires **HTTP 429 (Rate-Limited)**, il est **fortement recommandé de configurer un proxy** (ou une liste de proxys rotatifs) via le menu de configuration avancée (`⚙️ Configure Advanced Settings`) ou dans le fichier `config.yaml`.
 > 
 > **[EN] PROXY USAGE STRONGLY RECOMMENDED:**  
-> When scraping large volumes of Discord Shop assets (1,200+ items), using a proxy or rotating proxy list (configured via `⚙️ Configure Advanced Settings` or `config.yaml`) is **strongly recommended** to avoid Discord HTTP 429 rate limit delays.
+> When scraping large volumes of Discord Shop assets (3,000+ assets), using a proxy or rotating proxy list (configured via `⚙️ Configure Advanced Settings` or `config.yaml`) is **strongly recommended** to avoid Discord HTTP 429 rate limit delays.
 
 ---
 
@@ -49,38 +49,36 @@ An ultra-modern, high-performance, modular CLI scraper for Discord profile colle
 
 ```text
 discord-collectibles-downloader/
-├── main.py                     # Entry point (100% Interactive CLI)
+├── main.py                     # Entry point (100% Interactive CLI + JSON export)
 ├── README.md                   # Full documentation & guide
+├── changelogs.md               # Version history & per-commit impact log
 ├── LICENSE                     # MIT License
-├── config.yaml                 # Auto-saved configuration settings
-├── .gitignore                  # Git ignore rules
+├── config.yaml                 # Auto-saved configuration settings (token, proxy, locale, threads)
+├── .gitignore                  # Git ignore rules (protects config.yaml & *.har)
 └── src/                        # Core modular engine
     ├── __init__.py
     ├── banner.py               # ASCII logo & ANSI neon themes
     ├── menu.py                 # Interactive Menu, Wizard & Token Prompt
     ├── config.py               # YAML configuration loader & saver
-    ├── scanner.py              # Live Discord API Catalog Parser & Timer
-    ├── downloader.py           # Multithreaded Downloader & Magic Bytes detector
-    └── utils.py                # Path Sanitizers, Proxy parser & Health tester
+    ├── scanner.py              # Batch Storefront API Scanner, Token & Rate-Limit Guard
+    ├── downloader.py           # Multithreaded CDN Downloader & Magic Bytes detector
+    └── utils.py                # Chrome 158 / X-Super-Properties Headers, Proxy & Sanitizers
 ```
 
 ---
 
 ## ✨ Features / Fonctionnalités
 
+- ⚡ **Batch Storefront API Scanner (v2.0)**: Queries `/collectibles-categories/v2`, `/storefront/collections/applications`, combined `/shop/search`, and 30-SKU batch `/storefront/products/skus` endpoints (~30x fewer API requests).
+- 🔑 **Token Revocation Detection (v2.0)**: Verifies token validity upfront (`/users/@me`) and detects runtime `401`/`403` revocations with an explicit `[✖ TOKEN REVOQUE / INVALIDE]` console alert instead of failing silently.
+- 🛡️ **Anti-Rate-Limit & Realistic Client Headers (v2.0)**: Sends modern Chrome 158 `X-Super-Properties` & locale headers to Discord APIs, never leaks `Authorization` to `cdn.discordapp.com`, proactively paces via `X-RateLimit-Remaining`, and retries `429` with `Retry-After`.
 - 🔮 **Unreleased Collectibles Discovery**: Directly queries internal Discord API endpoints to uncover upcoming and unreleased collectibles.
-- ⏱️ **Live Elapsed Timer & Speed Stats**: Real-time elapsed time counter (`⏱️ 00:45`) and speed tracker (`14.2 items/sec`) during scanning and downloading.
-- 🧪 **Automatic Proxy Health Check**: Tests proxy status (`🟢 ON` / `🔴 OFF`) before scanning with automatic fallback to direct connection if proxy fails.
+- ⏱️ **Live Elapsed Timer & Speed Stats**: Real-time elapsed time counter (`⏱️ 00:45`) and speed tracker (`28.6 items/sec`) during scanning and downloading.
+- 🧪 **Automatic Proxy Health Check & CDN Fallback**: Tests proxy status (`🟢 ON` / `🔴 OFF`) before scanning, caps proxy CDN concurrency, and falls back to direct connection on final CDN retry if a proxy drops.
 - 🌐 **Universal Proxy Format Support**: Supports all proxy formats (`host:port:user:pass`, `user:pass@host:port`, `http://...`, `socks5://...`).
-- 🎮 **100% Interactive Console Setup**: Configure threads, proxies, and output paths interactively on launch.
-- 🎮 **Interactive Terminal Menu**: Navigate seamlessly using keyboard **Arrow Keys (Up/Down)** and **Enter** in your console.
-- 🔑 **Mandatory Token Prompt**: Interactive token verification prompt upon execution.
-- 📡 **Live Real-Time Feedback**: View asset discoveries line-by-line as the scanner queries Discord APIs.
+- 🎮 **100% Interactive Console Setup**: Navigate with keyboard **Arrow Keys (Up/Down)** and **Enter**, configure threads, proxies, locale, and JSON export (`catalog.json`).
 - 🎨 **Modern Neon UI**: Vibrant ANSI color themes, ASCII headers, and live progress bars `[████████░░] 80%`.
-- 🌐 **100% Direct API Scraper**: Queries Discord's official shop search API endpoints across all categories.
-- ⚡ **Multi-threaded Downloader**: Concurrent downloads powered by `ThreadPoolExecutor`.
-- 🛡️ **Rate-Limit & Retry System**: Automatically handles HTTP 429 (`Retry-After`) rate limits and retries failed requests.
-- 🗂️ **Smart Categorization**: Automatically categorizes assets by item type (`Avatar_Decorations`, `Profile_Effects`, `Nameplates`, `Profile_Borders`) and theme category.
+- 🗂️ **Smart Categorization**: Automatically categorizes assets by item type (`Avatar_Decorations`, `Profile_Effects`, `Nameplates`, `Profile_Borders`) and official collection name.
 - 🔍 **Magic Bytes Detector**: Verifies actual file header signatures (`.png`, `.webp`, `.gif`, `.mp4`, `.webm`).
 
 ---
@@ -148,9 +146,10 @@ python main.py
 
 ---
 
-## 📜 License
+## 📜 Changelog & License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+- Full version history and per-commit impact are documented in [changelogs.md](changelogs.md).
+- Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 ---
 
